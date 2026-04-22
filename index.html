@@ -1,7 +1,317 @@
-import { useState, useRef } from "react";
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>25選最大5個 · 最佳場次模擬器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+TC:wght@400;700;900&display=swap');
 
-const GROUPS = ["A", "B", "C", "D", "E"];
+  :root {
+    --bg: #080612;
+    --bg2: #0f0d1e;
+    --bg3: #16122a;
+    --border: #2a2050;
+    --accent: #8b5cf6;
+    --accent2: #06d6a0;
+    --gold: #f59e0b;
+    --red: #ef4444;
+    --text: #ddd6fe;
+    --muted: #6b5fa0;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Noto Sans TC', sans-serif;
+  }
 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(139,92,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139,92,246,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 16px 80px; }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 40px 0 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 8px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 4px;
+    line-height: 1.1;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+
+  /* Progress bar */
+  .progress-wrap { margin-top: 16px; }
+  .progress-info {
+    display: flex; justify-content: center; gap: 24px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .progress-info strong { color: var(--gold); font-size: 18px; }
+  .progress-info .ok { color: var(--accent2); font-size: 14px; }
+  .bar-track {
+    height: 3px; background: var(--border); border-radius: 2px;
+    max-width: 360px; margin: 0 auto;
+  }
+  .bar-fill {
+    height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.5s ease;
+  }
+
+  /* Start panel */
+  .start-panel {
+    max-width: 460px; margin: 0 auto;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px;
+  }
+  .panel-title {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 4px;
+    color: var(--muted); text-align: center; margin-bottom: 20px;
+  }
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .field-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 10px 12px;
+    font-family: var(--mono); font-size: 12px; resize: vertical;
+    outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  /* Buttons */
+  .btn {
+    display: inline-block; border: none; border-radius: 8px;
+    color: #fff; padding: 11px 22px; font-family: var(--mono);
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    cursor: pointer; transition: transform 0.1s, opacity 0.2s;
+    width: 100%;
+  }
+  .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn-purple { background: var(--accent); box-shadow: 0 4px 20px #8b5cf644; }
+  .btn-dark { background: #1e1a3a; border: 1px solid var(--border); margin-top: 8px; }
+  .btn-green { background: #065f46; box-shadow: 0 4px 20px #06d6a044; }
+  .btn-red { background: #7f1d1d; }
+  .btn-reset { background: #1e1a3a; border: 1px solid var(--border); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 24px; }
+  .controls .btn { width: auto; }
+
+  /* Section label */
+  .sec-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 4px;
+    color: var(--muted); padding-bottom: 6px;
+    border-bottom: 1px solid var(--border); margin-bottom: 12px;
+  }
+
+  /* Groups grid */
+  .groups-grid {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 8px;
+  }
+  .group-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px; min-width: 82px;
+  }
+  .group-name {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 3px;
+    color: var(--accent); text-align: center; margin-bottom: 8px;
+  }
+  .num-cell {
+    margin-bottom: 3px; padding: 3px 6px; border-radius: 5px;
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    text-align: center; transition: all 0.5s;
+    border: 1px solid transparent;
+    position: relative;
+  }
+  .num-cell.normal { background: rgba(255,255,255,0.04); color: var(--text); }
+  .num-cell.elim { background: #1a0606; color: #4a1a1a; text-decoration: line-through; border-color: #2a0808; }
+  .num-cell.top5 { background: #052e16; color: var(--accent2); border-color: #065f46; }
+  .num-cell .loss-badge {
+    font-size: 7px; color: var(--muted); margin-left: 3px;
+    font-family: var(--mono);
+  }
+  .num-cell.elim .loss-badge { color: #4a1a1a; }
+  .legend {
+    text-align: center; font-size: 9px; color: var(--muted);
+    font-family: var(--mono); letter-spacing: 1px; margin-top: 6px;
+  }
+
+  /* Round log */
+  .round-list { display: flex; flex-direction: column; gap: 6px; }
+  .round-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    animation: slideIn 0.35s ease;
+  }
+  .round-card.latest { border-color: var(--accent); background: rgba(139,92,246,0.08); }
+  .round-card-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
+    color: var(--accent); margin-bottom: 7px;
+  }
+  .round-participants { display: flex; gap: 5px; flex-wrap: wrap; }
+  .participant {
+    display: flex; align-items: center; gap: 4px;
+    border-radius: 6px; padding: 2px 8px;
+    border: 1px solid var(--border);
+  }
+  .participant.first { background: #1e1050; border-color: var(--accent); }
+  .participant .rank { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+  .participant .val { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+  .participant.first .val { color: #c4b5fd; }
+
+  /* Final result */
+  .final-box {
+    background: linear-gradient(135deg, #0a0620, #160d40);
+    border: 2px solid var(--accent); border-radius: 16px;
+    padding: 32px; text-align: center;
+  }
+  .final-title {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 6px;
+    color: var(--muted); margin-bottom: 20px;
+  }
+  .medals { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .medal {
+    width: 68px; height: 68px; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-width: 3px; border-style: solid;
+  }
+  .medal .medal-rank { font-size: 8px; color: rgba(255,255,255,0.5); }
+  .medal .medal-val { font-family: var(--mono); font-size: 22px; font-weight: 700; color: #fff; }
+  .medal-1 { background: #422006; border-color: var(--gold); }
+  .medal-2 { background: #1c1c1c; border-color: #9ca3af; }
+  .medal-3 { background: #3b1a08; border-color: #b45309; }
+  .medal-n { background: #1e1050; border-color: var(--accent); }
+  .final-count {
+    background: rgba(0,0,0,0.4); border-radius: 10px;
+    display: inline-block; padding: 14px 28px;
+  }
+  .final-count .lbl { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: 2px; }
+  .final-count .big { font-family: var(--mono); font-size: 48px; font-weight: 700; color: var(--gold); line-height: 1; }
+  .final-count .note { font-size: 10px; color: var(--accent2); margin-top: 4px; font-family: var(--mono); }
+
+  .section { margin-bottom: 24px; }
+  .hidden { display: none; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">OPTIMAL TOURNAMENT SIMULATOR</div>
+    <h1>25 選最大 <span>5</span> 個</h1>
+    <div class="subtitle">最佳策略 · 最少比賽場次</div>
+    <div class="progress-wrap" id="progressWrap" style="display:none">
+      <div class="progress-info">
+        <span>最少場次：<strong id="totalRoundsDisplay">—</strong></span>
+        <span>進度：<span class="ok" id="progressDisplay">0</span> / <span id="totalDisplay">—</span></span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+    </div>
+  </header>
+
+  <!-- Start panel -->
+  <div id="startPanel">
+    <div class="start-panel">
+      <div class="panel-title">選擇模式</div>
+      <button class="btn btn-purple" onclick="startRandom()">🎲 隨機產生 1 ～ 25</button>
+      <div class="divider"></div>
+      <div class="field-label">自訂 25 個數字（空格或逗號分隔）</div>
+      <textarea id="customInput" rows="3" placeholder="例：5 12 3 88 47 ..."></textarea>
+      <button class="btn btn-dark" onclick="startCustom()">✏️ 使用自訂數字</button>
+    </div>
+  </div>
+
+  <!-- Game panel -->
+  <div id="gamePanel" class="hidden">
+
+    <!-- Controls -->
+    <div class="controls" id="controls"></div>
+
+    <!-- Groups -->
+    <div class="section">
+      <div class="sec-label">📦 25 個數字（已分 5 組）</div>
+      <div class="groups-grid" id="groupsGrid"></div>
+      <div class="legend">🟢 確認前5　🔴 淘汰（劃線）　括號 = 已輸場數</div>
+    </div>
+
+    <!-- Round log -->
+    <div class="section" id="roundLogSection" style="display:none">
+      <div class="sec-label">📊 比賽記錄</div>
+      <div class="round-list" id="roundList"></div>
+    </div>
+
+    <!-- Final -->
+    <div class="section" id="finalSection" style="display:none">
+      <div class="sec-label">🏆 最終結果</div>
+      <div class="final-box">
+        <div class="final-title">最大的 5 個數字</div>
+        <div class="medals" id="medals"></div>
+        <div class="final-count">
+          <div class="lbl">最佳策略共使用</div>
+          <div class="big" id="finalCount">—</div>
+          <div class="note" id="finalNote">次比賽</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /gamePanel -->
+
+</div><!-- /wrap -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let state = {
+  numbers: [], items: [], rounds: [], top5: [],
+  visibleRound: 0, autoTimer: null
+};
+
+// ── Utilities ──────────────────────────────────────────────────────────────
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -11,86 +321,57 @@ function shuffle(arr) {
   return a;
 }
 
-// Core algorithm: find top 5 in minimum rounds
-// Returns array of rounds, each round = { label, participants (sorted desc), eliminated[], confirmed[] }
+// ── Algorithm ──────────────────────────────────────────────────────────────
 function solveOptimal(numbers) {
-  const rounds = [];
-  // Build items
   const items = numbers.map((v, i) => ({ id: i, value: v }));
-
-  // Track confirmed losses: lossCount[id] = Set of ids that beat it
   const beatenBy = {};
   items.forEach(x => beatenBy[x.id] = new Set());
+  const rounds = [];
 
   function runRound(label, group) {
     const sorted = [...group].sort((a, b) => b.value - a.value);
-    // update beatenBy
-    for (let i = 1; i < sorted.length; i++) {
-      beatenBy[sorted[i].id].add(sorted[0].id);
-    }
-    // Full transitive: winner beats everyone below
-    for (let i = 0; i < sorted.length; i++) {
+    for (let i = 0; i < sorted.length; i++)
       for (let j = i + 1; j < sorted.length; j++) {
         beatenBy[sorted[j].id].add(sorted[i].id);
+        beatenBy[sorted[i].id].forEach(b => beatenBy[sorted[j].id].add(b));
       }
-    }
     rounds.push({ label, participants: sorted });
     return sorted;
   }
 
-  // Phase 1: 5 group races
+  const GROUPS = ['A','B','C','D','E'];
   const groupItems = GROUPS.map((g, i) =>
-    items.slice(i * 5, (i + 1) * 5).map((item, j) => ({ ...item, groupLabel: g, groupRank: j }))
+    items.slice(i * 5, (i + 1) * 5)
   );
+  groupItems.forEach((grp, i) => runRound(`第${i+1}次 ｜ ${GROUPS[i]} 組初賽`, grp));
 
-  const groupResults = groupItems.map((grp, i) => runRound(`第${i + 1}次｜${GROUPS[i]} 組初賽`, grp));
+  const champs = groupItems.map(grp => [...grp].sort((a,b) => b.value - a.value)[0]);
+  const champSorted = runRound('第6次 ｜ 冠軍賽', champs);
 
-  // Phase 2: champion race
-  const champs = groupResults.map(g => g[0]);
-  const champSorted = runRound("第6次｜冠軍賽", champs);
-
-  // confirmed #1
-  const confirmed = new Set([champSorted[0].id]);
   const top5Ids = new Set([champSorted[0].id]);
+  let candidates = items.filter(item => !top5Ids.has(item.id) && beatenBy[item.id].size < 5);
 
-  // Determine candidates after round 6
-  // A candidate can still be top5 if beatenBy[id].size < 5
-  let candidates = items.filter(item => {
-    if (confirmed.has(item.id)) return false;
-    return beatenBy[item.id].size < 5;
-  });
-
-  // Phase 3: elimination rounds - pick optimal 5 each time
   let roundNum = 7;
   while (candidates.length > 0) {
-    // Strategy: pick the 5 with fewest known losses (most likely to be top5)
-    // Also prioritize those not yet compared to each other
-    const pickable = [...candidates].sort((a, b) => beatenBy[a.id].size - beatenBy[b.id].size);
+    const pickable = [...candidates].sort((a,b) => beatenBy[a.id].size - beatenBy[b.id].size);
     const batch = pickable.slice(0, 5);
-
-    const sorted = runRound(`第${roundNum}次｜決選淘汰賽`, batch);
+    runRound(`第${roundNum}次 ｜ 決選淘汰賽`, batch);
     roundNum++;
 
-    // After this race, we know full order within batch
-    // Update beatenBy transitively
-    for (let i = 0; i < sorted.length; i++) {
-      for (let j = i + 1; j < sorted.length; j++) {
-        beatenBy[sorted[j].id].add(sorted[i].id);
-        // also propagate: anything that beats sorted[i] also beats sorted[j]
-        beatenBy[sorted[i].id].forEach(beater => beatenBy[sorted[j].id].add(beater));
-      }
-    }
-
-    // Re-evaluate candidates
-    // Anyone with beatenBy.size >= 5 is eliminated
-    candidates = items.filter(item => {
-      if (top5Ids.has(item.id)) return false;
-      return beatenBy[item.id].size < 5;
+    // recompute known losses for all candidates
+    const recompute = {};
+    items.forEach(x => recompute[x.id] = new Set());
+    rounds.forEach(r => {
+      const s = r.participants;
+      for (let i = 0; i < s.length; i++)
+        for (let j = i + 1; j < s.length; j++) {
+          recompute[s[j].id].add(s[i].id);
+          recompute[s[i].id].forEach(b => recompute[s[j].id].add(b));
+        }
     });
+    Object.keys(recompute).forEach(id => beatenBy[id] = recompute[id]);
 
-    // Check if we can confirm more top5
-    // Anyone not yet confirmed but beatenBy.size < 5 AND no remaining unconfirmed can beat them enough
-    // Simple check: if candidates.length <= 4 - confirmed_non_first, we're done
+    candidates = items.filter(item => !top5Ids.has(item.id) && beatenBy[item.id].size < 5);
     const needed = 4 - (top5Ids.size - 1);
     if (candidates.length <= needed) {
       candidates.forEach(c => top5Ids.add(c.id));
@@ -98,285 +379,177 @@ function solveOptimal(numbers) {
     }
   }
 
-  // Final top5 by value
-  const top5 = [...items].sort((a, b) => b.value - a.value).slice(0, 5);
-
-  return { rounds, top5, items, beatenBy };
+  const top5 = [...items].sort((a,b) => b.value - a.value).slice(0, 5);
+  return { rounds, top5, items };
 }
 
-export default function App() {
-  const [numbers, setNumbers] = useState([]);
-  const [result, setResult] = useState(null);
-  const [visibleRound, setVisibleRound] = useState(0);
-  const [started, setStarted] = useState(false);
-  const [customNums, setCustomNums] = useState("");
-  const [autoPlay, setAutoPlay] = useState(false);
-  const timerRef = useRef(null);
-
-  function runGame(nums) {
-    const res = solveOptimal(nums);
-    setNumbers(nums);
-    setResult(res);
-    setVisibleRound(0);
-    setStarted(true);
-  }
-
-  function startRandom() {
-    runGame(shuffle(Array.from({ length: 25 }, (_, i) => i + 1)));
-  }
-
-  function startCustom() {
-    const parsed = customNums.split(/[\s,，]+/).map(Number).filter(n => !isNaN(n) && n > 0);
-    if (parsed.length !== 25) { alert("請輸入恰好25個數字！"); return; }
-    runGame(shuffle(parsed));
-  }
-
-  function nextRound() {
-    if (result && visibleRound < result.rounds.length) {
-      setVisibleRound(v => v + 1);
-    }
-  }
-
-  function playAll() {
-    if (!result) return;
-    setAutoPlay(true);
-    let cur = visibleRound;
-    function step() {
-      if (cur < result.rounds.length) {
-        cur++;
-        setVisibleRound(cur);
-        timerRef.current = setTimeout(step, 700);
-      } else {
-        setAutoPlay(false);
+// ── Compute per-item loss count up to visibleRound ─────────────────────────
+function computeLosses() {
+  const beaten = {};
+  state.items.forEach(x => beaten[x.id] = new Set());
+  state.rounds.slice(0, state.visibleRound).forEach(r => {
+    const s = r.participants;
+    for (let i = 0; i < s.length; i++)
+      for (let j = i + 1; j < s.length; j++) {
+        beaten[s[j].id].add(s[i].id);
+        beaten[s[i].id].forEach(b => beaten[s[j].id].add(b));
       }
-    }
-    timerRef.current = setTimeout(step, 400);
-  }
+  });
+  return beaten;
+}
 
-  function reset() {
-    clearTimeout(timerRef.current);
-    setStarted(false);
-    setResult(null);
-    setVisibleRound(0);
-    setAutoPlay(false);
-  }
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  const { rounds, top5, items, visibleRound } = state;
+  const total = rounds.length;
+  const isDone = visibleRound >= total;
+  const beaten = computeLosses();
 
-  // Compute elimination status up to visibleRound
-  const elimStatus = {};
-  const confirmedIds = new Set();
-  if (result) {
-    const beatenBy = {};
-    result.items.forEach(x => beatenBy[x.id] = new Set());
-    result.rounds.slice(0, visibleRound).forEach(r => {
-      const sorted = r.participants;
-      for (let i = 0; i < sorted.length; i++)
-        for (let j = i + 1; j < sorted.length; j++) {
-          beatenBy[sorted[j].id].add(sorted[i].id);
-          beatenBy[sorted[i].id].forEach(b => beatenBy[sorted[j].id].add(b));
-        }
+  // Progress
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('totalRoundsDisplay').textContent = total;
+  document.getElementById('progressDisplay').textContent = visibleRound;
+  document.getElementById('totalDisplay').textContent = total;
+  document.getElementById('barFill').style.width = total ? `${(visibleRound/total)*100}%` : '0%';
+
+  // Controls
+  const ctrl = document.getElementById('controls');
+  ctrl.innerHTML = '';
+  if (!isDone && !state.autoTimer) {
+    ctrl.innerHTML += `<button class="btn btn-purple" onclick="nextRound()">▶ 下一場比賽</button>`;
+    ctrl.innerHTML += `<button class="btn btn-green" onclick="playAll()">⚡ 自動播放全部</button>`;
+  }
+  if (state.autoTimer) {
+    ctrl.innerHTML += `<button class="btn btn-red" onclick="pausePlay()">⏸ 暫停</button>`;
+  }
+  ctrl.innerHTML += `<button class="btn btn-reset" onclick="resetGame()">🔄 重新開始</button>`;
+
+  // Groups
+  const GROUPS = ['A','B','C','D','E'];
+  const grid = document.getElementById('groupsGrid');
+  grid.innerHTML = '';
+  GROUPS.forEach((g, gi) => {
+    const grp = items.slice(gi * 5, (gi + 1) * 5);
+    let html = `<div class="group-card"><div class="group-name">${g} 組</div>`;
+    grp.forEach(item => {
+      const cnt = beaten[item.id].size;
+      const isTop5 = isDone && top5.find(t => t.id === item.id);
+      const isElim = cnt >= 5 && !isTop5;
+      const cls = isTop5 ? 'top5' : isElim ? 'elim' : 'normal';
+      const badge = cnt > 0 ? `<span class="loss-badge">-${cnt}</span>` : '';
+      html += `<div class="num-cell ${cls}">${item.value}${badge}</div>`;
     });
-    result.items.forEach(item => {
-      const cnt = beatenBy[item.id].size;
-      if (cnt === 0 && visibleRound > 0) { /* unknown */ }
-      if (cnt >= 5) elimStatus[item.id] = "elim";
-      else if (cnt === 0 && result.top5.find(t => t.id === item.id) && visibleRound >= result.rounds.length) elimStatus[item.id] = "top5";
+    html += '</div>';
+    grid.innerHTML += html;
+  });
+
+  // Round log
+  const logSection = document.getElementById('roundLogSection');
+  const roundList = document.getElementById('roundList');
+  if (visibleRound > 0) {
+    logSection.style.display = 'block';
+    roundList.innerHTML = '';
+    rounds.slice(0, visibleRound).forEach((r, i) => {
+      const isLatest = i === visibleRound - 1;
+      let pHtml = r.participants.map((p, j) =>
+        `<div class="participant${j===0?' first':''}">
+          <span class="rank">#${j+1}</span>
+          <span class="val">${p.value}</span>
+        </div>`
+      ).join('');
+      roundList.innerHTML += `
+        <div class="round-card${isLatest?' latest':''}">
+          <div class="round-card-label">${r.label}</div>
+          <div class="round-participants">${pHtml}</div>
+        </div>`;
     });
-    // confirmed #1 after round 6
-    if (visibleRound >= 6 && result.rounds.length >= 6) {
-      const champRound = result.rounds[5];
-      confirmedIds.add(champRound.participants[0].id);
-    }
-    if (visibleRound >= result.rounds.length) {
-      result.top5.forEach(t => confirmedIds.add(t.id));
-    }
+    // scroll latest into view
+    const cards = roundList.querySelectorAll('.round-card');
+    if (cards.length) cards[cards.length-1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    logSection.style.display = 'none';
   }
 
-  const groups5 = result ? GROUPS.map((g, gi) =>
-    result.items.slice(gi * 5, (gi + 1) * 5)
-  ) : [];
-
-  const isDone = result && visibleRound >= result.rounds.length;
-  const totalRounds = result ? result.rounds.length : 0;
-
-  return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0a0818,#1a1535,#0f1a2e)", fontFamily: "'Courier New',monospace", color: "#e0d7ff", paddingBottom: 60 }}>
-
-      {/* Header */}
-      <div style={{ textAlign: "center", padding: "32px 16px 18px", borderBottom: "1px solid #3a3060" }}>
-        <div style={{ fontSize: 9, letterSpacing: 10, color: "#7c5cbf", marginBottom: 6 }}>OPTIMAL TOURNAMENT</div>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: 3 }}>25選最大5個</h1>
-        <div style={{ marginTop: 6, fontSize: 11, color: "#7c5cbf" }}>最佳策略 · 最少比賽場次</div>
-        {started && result && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 11, color: "#9b86ff" }}>
-              最少場次：<span style={{ color: "#ffd700", fontSize: 20, fontWeight: 900 }}>{totalRounds}</span> 次
-              　　進度：<span style={{ color: "#6effa0", fontSize: 16, fontWeight: 700 }}>{visibleRound}</span> / {totalRounds}
-            </div>
-            <div style={{ marginTop: 8, height: 4, background: "#2a2040", borderRadius: 4, maxWidth: 400, margin: "8px auto 0" }}>
-              <div style={{ height: 4, background: "linear-gradient(90deg,#7c5cbf,#6effa0)", borderRadius: 4, width: `${(visibleRound / totalRounds) * 100}%`, transition: "width 0.4s" }} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={{ maxWidth: 820, margin: "0 auto", padding: "0 12px" }}>
-
-        {/* Start panel */}
-        {!started && (
-          <div style={{ marginTop: 36, display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #4a3f7a", borderRadius: 16, padding: 28, width: "100%", maxWidth: 460 }}>
-              <div style={{ fontSize: 11, color: "#9b86ff", marginBottom: 16, textAlign: "center", letterSpacing: 2 }}>選擇模式</div>
-              <Btn color="#7c5cbf" onClick={startRandom}>🎲 隨機產生 1～25</Btn>
-              <div style={{ margin: "16px 0", borderTop: "1px solid #3a3060" }} />
-              <div style={{ fontSize: 10, color: "#9b86ff", marginBottom: 6 }}>自訂25個數字（空格或逗號分隔）</div>
-              <textarea value={customNums} onChange={e => setCustomNums(e.target.value)}
-                placeholder="例：5 12 3 88 47 ..." rows={3}
-                style={{ width: "100%", background: "#12103a", border: "1px solid #4a3f7a", borderRadius: 8, color: "#e0d7ff", padding: 8, fontSize: 12, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
-              <div style={{ marginTop: 8 }}><Btn color="#4a3f7a" onClick={startCustom}>✏️ 使用自訂數字</Btn></div>
-            </div>
-          </div>
-        )}
-
-        {started && result && (
-          <>
-            {/* Controls */}
-            <div style={{ marginTop: 20, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-              {!isDone && !autoPlay && <Btn color="#7c5cbf" onClick={nextRound}>▶ 下一場比賽</Btn>}
-              {!isDone && !autoPlay && <Btn color="#1a6b5a" onClick={playAll}>⚡ 自動播放全部</Btn>}
-              {autoPlay && <Btn color="#6b2020" onClick={() => { clearTimeout(timerRef.current); setAutoPlay(false); }}>⏸ 暫停</Btn>}
-              <Btn color="#3a2060" onClick={reset}>🔄 重新開始</Btn>
-            </div>
-
-            {/* Groups grid */}
-            <div style={{ marginTop: 20 }}>
-              <Label>📦 25個數字（5組）</Label>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
-                {groups5.map((grp, gi) => (
-                  <div key={gi} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #3a3060", borderRadius: 10, padding: "10px 10px", minWidth: 78 }}>
-                    <div style={{ fontSize: 8, color: "#7c5cbf", marginBottom: 7, letterSpacing: 2, textAlign: "center" }}>{GROUPS[gi]} 組</div>
-                    {grp.map((item, j) => {
-                      const isTop5 = isDone && result.top5.find(t => t.id === item.id);
-                      const beatenCount = (() => {
-                        // recompute from visible rounds
-                        const beaten = new Set();
-                        result.rounds.slice(0, visibleRound).forEach(r => {
-                          const idx = r.participants.findIndex(p => p.id === item.id);
-                          if (idx > 0) r.participants.slice(0, idx).forEach(p => beaten.add(p.id));
-                          if (idx >= 0) {
-                            // transitivity
-                            r.participants.forEach((p, pi) => {
-                              if (pi < idx) beaten.add(p.id);
-                            });
-                          }
-                        });
-                        return beaten.size;
-                      })();
-                      const isElim = beatenCount >= 5 && !isTop5;
-                      const isConf = confirmedIds.has(item.id);
-                      return (
-                        <div key={j} style={{
-                          marginBottom: 3, padding: "3px 5px", borderRadius: 5, fontSize: 13, fontWeight: 700, textAlign: "center",
-                          background: isConf ? "#0e3d1e" : isElim ? "#2a0808" : "rgba(255,255,255,0.05)",
-                          color: isConf ? "#6effa0" : isElim ? "#5a2020" : "#e0d7ff",
-                          textDecoration: isElim ? "line-through" : "none",
-                          border: `1px solid ${isConf ? "#2d7d46" : isElim ? "#3a1010" : "transparent"}`,
-                          transition: "all 0.5s"
-                        }}>
-                          {item.value}
-                          {beatenCount > 0 && !isConf && <span style={{ fontSize: 7, color: isElim ? "#5a2020" : "#7c5cbf", marginLeft: 2 }}>(-{beatenCount})</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-              <div style={{ textAlign: "center", marginTop: 8, fontSize: 9, color: "#5a4f80" }}>
-                🟢 確認前5　🔴 淘汰　括號內=已確定輸幾場
-              </div>
-            </div>
-
-            {/* Round log */}
-            {visibleRound > 0 && (
-              <div style={{ marginTop: 20 }}>
-                <Label>📊 比賽記錄</Label>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {result.rounds.slice(0, visibleRound).map((r, i) => (
-                    <div key={i} style={{
-                      background: i === visibleRound - 1 ? "rgba(124,92,191,0.12)" : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${i === visibleRound - 1 ? "#7c5cbf" : "#2a2040"}`,
-                      borderRadius: 9, padding: "9px 12px",
-                      animation: i === visibleRound - 1 ? "fadeIn 0.4s ease" : "none"
-                    }}>
-                      <div style={{ fontSize: 9, color: "#9b86ff", marginBottom: 5, letterSpacing: 1 }}>{r.label}</div>
-                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                        {r.participants.map((p, j) => (
-                          <div key={j} style={{
-                            display: "flex", alignItems: "center", gap: 3,
-                            background: j === 0 ? "#1e1050" : "rgba(255,255,255,0.04)",
-                            border: `1px solid ${j === 0 ? "#9b86ff" : "#2a2040"}`,
-                            borderRadius: 6, padding: "2px 7px"
-                          }}>
-                            <span style={{ fontSize: 8, color: "#9b86ff" }}>#{j + 1}</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: j === 0 ? "#c0b0ff" : "#e0d7ff" }}>{p.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Final result */}
-            {isDone && (
-              <div style={{ marginTop: 24 }}>
-                <Label>🏆 最終結果</Label>
-                <div style={{
-                  background: "linear-gradient(135deg,#10082a,#1e1050)",
-                  border: "2px solid #9b86ff", borderRadius: 16, padding: 28, textAlign: "center"
-                }}>
-                  <div style={{ fontSize: 10, color: "#9b86ff", letterSpacing: 4, marginBottom: 18 }}>最大的 5 個數字</div>
-                  <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-                    {result.top5.map((item, i) => (
-                      <div key={i} style={{
-                        width: 66, height: 66, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column",
-                        background: i === 0 ? "#6a4000" : i === 1 ? "#3a3a3a" : i === 2 ? "#4a2a0a" : "#1e1050",
-                        border: `3px solid ${i === 0 ? "#ffd700" : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : "#7c5cbf"}`
-                      }}>
-                        <div style={{ fontSize: 8, color: "rgba(255,255,255,0.5)" }}>#{i + 1}</div>
-                        <div style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>{item.value}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: 22, padding: "14px 20px", background: "rgba(0,0,0,0.3)", borderRadius: 10, display: "inline-block" }}>
-                    <div style={{ fontSize: 11, color: "#9b86ff", marginBottom: 4 }}>最佳策略共使用</div>
-                    <div style={{ fontSize: 36, fontWeight: 900, color: "#ffd700" }}>{totalRounds} 次</div>
-                    <div style={{ fontSize: 10, color: "#7c5cbf", marginTop: 4 }}>
-                      {totalRounds <= 7 ? "✨ 達到理論最佳解！" : `理論最小值 7 次，本次 ${totalRounds} 次`}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }`}</style>
-    </div>
-  );
+  // Final
+  const finalSection = document.getElementById('finalSection');
+  if (isDone) {
+    finalSection.style.display = 'block';
+    const medalColors = [
+      {bg:'#422006', border:'#f59e0b'},
+      {bg:'#1c1c1c', border:'#9ca3af'},
+      {bg:'#3b1a08', border:'#b45309'},
+      {bg:'#1e1050', border:'#8b5cf6'},
+      {bg:'#1e1050', border:'#8b5cf6'},
+    ];
+    document.getElementById('medals').innerHTML = top5.map((item, i) =>
+      `<div class="medal" style="background:${medalColors[i].bg};border-color:${medalColors[i].border}">
+        <span class="medal-rank">#${i+1}</span>
+        <span class="medal-val">${item.value}</span>
+      </div>`
+    ).join('');
+    document.getElementById('finalCount').textContent = total;
+    document.getElementById('finalNote').textContent =
+      total <= 7 ? '次  ✨ 達到理論最佳解！' : `次  （理論最小值 7 次）`;
+  } else {
+    finalSection.style.display = 'none';
+  }
 }
 
-function Btn({ color, onClick, children }) {
-  return (
-    <button onClick={onClick} style={{
-      background: color, border: "none", borderRadius: 9, color: "#fff",
-      padding: "10px 22px", fontSize: 12, fontFamily: "inherit", fontWeight: 700,
-      cursor: "pointer", letterSpacing: 1, boxShadow: `0 3px 16px ${color}99`
-    }}>{children}</button>
-  );
+// ── Game control ───────────────────────────────────────────────────────────
+function startGame(nums) {
+  clearInterval(state.autoTimer);
+  const result = solveOptimal(nums);
+  state = { numbers: nums, ...result, visibleRound: 0, autoTimer: null };
+  document.getElementById('startPanel').classList.add('hidden');
+  document.getElementById('gamePanel').classList.remove('hidden');
+  render();
 }
 
-function Label({ children }) {
-  return <div style={{ fontSize: 9, letterSpacing: 3, color: "#7c5cbf", marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid #1e1a3a" }}>{children}</div>;
+function startRandom() {
+  startGame(shuffle(Array.from({length:25},(_,i)=>i+1)));
 }
+
+function startCustom() {
+  const raw = document.getElementById('customInput').value;
+  const parsed = raw.split(/[\s,，]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+  if (parsed.length !== 25) { alert('請輸入恰好 25 個數字！'); return; }
+  startGame(shuffle(parsed));
+}
+
+function nextRound() {
+  if (state.visibleRound < state.rounds.length) {
+    state.visibleRound++;
+    render();
+  }
+}
+
+function playAll() {
+  if (state.autoTimer) return;
+  state.autoTimer = setInterval(() => {
+    if (state.visibleRound < state.rounds.length) {
+      state.visibleRound++;
+      render();
+    } else {
+      clearInterval(state.autoTimer);
+      state.autoTimer = null;
+      render();
+    }
+  }, 650);
+}
+
+function pausePlay() {
+  clearInterval(state.autoTimer);
+  state.autoTimer = null;
+  render();
+}
+
+function resetGame() {
+  clearInterval(state.autoTimer);
+  state.autoTimer = null;
+  document.getElementById('startPanel').classList.remove('hidden');
+  document.getElementById('gamePanel').classList.add('hidden');
+  document.getElementById('progressWrap').style.display = 'none';
+}
+</script>
+</body>
+</html>
