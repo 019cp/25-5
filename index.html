@@ -1,0 +1,491 @@
+import { useState, useEffect } from "react";
+
+const TOTAL = 25;
+const GROUP_SIZE = 5;
+const GROUPS = ["A", "B", "C", "D", "E"];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getRank(num, allNums) {
+  return allNums.filter(n => n > num).length + 1;
+}
+
+const PHASE_LABELS = ["初賽分組", "冠軍賽", "候選篩選", "決選淘汰", "最終結果"];
+
+export default function App() {
+  const [numbers, setNumbers] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [phase, setPhase] = useState(0);
+  const [roundResults, setRoundResults] = useState([]);
+  const [champions, setChampions] = useState([]);
+  const [champRanking, setChampRanking] = useState([]);
+  const [candidates, setCandidates] = useState([]);
+  const [eliminated, setEliminated] = useState(new Set());
+  const [confirmed, setConfirmed] = useState([]);
+  const [finalRound, setFinalRound] = useState([]);
+  const [finalResult, setFinalResult] = useState([]);
+  const [roundCount, setRoundCount] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [customNums, setCustomNums] = useState("");
+  const [useCustom, setUseCustom] = useState(false);
+
+  function initGame(nums) {
+    const shuffled = shuffle(nums);
+    const grps = GROUPS.map((g, i) =>
+      shuffled.slice(i * GROUP_SIZE, (i + 1) * GROUP_SIZE).map((v, j) => ({
+        id: `${g}${j + 1}`, group: g, rank: j + 1, value: v
+      }))
+    );
+    setNumbers(shuffled);
+    setGroups(grps);
+    setPhase(0);
+    setRoundResults([]);
+    setChampions([]);
+    setChampRanking([]);
+    setCandidates([]);
+    setEliminated(new Set());
+    setConfirmed([]);
+    setFinalRound([]);
+    setFinalResult([]);
+    setRoundCount(0);
+    setStarted(true);
+  }
+
+  function startRandom() {
+    const nums = shuffle(Array.from({ length: 25 }, (_, i) => i + 1));
+    initGame(nums);
+  }
+
+  function startCustom() {
+    const parsed = customNums.split(/[\s,，]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+    if (parsed.length !== 25) {
+      alert("請輸入恰好25個數字！");
+      return;
+    }
+    initGame(parsed);
+  }
+
+  // Phase 0: group races (rounds 1-5)
+  function runGroupRace(gIdx) {
+    const grp = groups[gIdx];
+    const sorted = [...grp].sort((a, b) => b.value - a.value);
+    const newGroups = groups.map((g, i) => i === gIdx ? sorted.map((item, j) => ({ ...item, rank: j + 1 })) : g);
+    setGroups(newGroups);
+    const newResult = { round: roundCount + 1, label: `第${gIdx + 1}次｜${GROUPS[gIdx]}組初賽`, participants: sorted, type: "group" };
+    setRoundResults(r => [...r, newResult]);
+    setRoundCount(c => c + 1);
+    if (gIdx === 4) setPhase(1);
+  }
+
+  // Phase 1: champion race (round 6)
+  function runChampRace() {
+    const champs = groups.map(g => g[0]);
+    const sorted = [...champs].sort((a, b) => b.value - a.value);
+    setChampions(sorted);
+    setChampRanking(sorted);
+    const newResult = { round: roundCount + 1, label: `第6次｜冠軍賽`, participants: sorted, type: "champ" };
+    setRoundResults(r => [...r, newResult]);
+    setRoundCount(c => c + 1);
+    setConfirmed([sorted[0]]);
+
+    // compute candidates
+    const elim = new Set();
+    const allItems = groups.flat();
+    allItems.forEach(item => {
+      // count how many confirmed-better items exist
+      let loseTo = 0;
+      // from same group: those ranked above
+      const grp = groups.find(g => g[0].group === item.group);
+      grp.forEach(other => { if (other.rank < item.rank) loseTo++; });
+      // from champ race: champs ranked above item's group champ
+      const myChampPos = sorted.findIndex(c => c.group === item.group);
+      loseTo += myChampPos; // champs ranked above
+      if (loseTo >= 5) elim.add(item.id);
+    });
+    elim.add(sorted[0].id); // already confirmed
+    setEliminated(elim);
+
+    const cands = allItems.filter(item => !elim.has(item.id) && item.id !== sorted[0].id);
+    setCandidates(cands);
+    setPhase(2);
+  }
+
+  // Phase 2 → 3: run elimination rounds
+  function runEliminationRound() {
+    // pick best 5 from remaining candidates
+    const remaining = candidates.filter(c => !eliminated.has(c.id));
+    if (remaining.length === 0) {
+      setPhase(4);
+      return;
+    }
+    const batch = remaining.slice(0, 5);
+    const sorted = [...batch].sort((a, b) => b.value - a.value);
+    const newResult = { round: roundCount + 1, label: `第${roundCount + 1}次｜淘汰賽`, participants: sorted, type: "elim" };
+    setRoundResults(r => [...r, newResult]);
+    setRoundCount(c => c + 1);
+
+    // update elimination based on new info
+    const newElim = new Set(eliminated);
+    const needed = 4 - confirmed.filter(c => c.id !== confirmed[0].id).length;
+    // After sorting, we now know relative order of batch
+    // Count confirmed+winners above each
+    setFinalRound(prev => {
+      const combined = [...prev, ...sorted];
+      // deduplicate
+      const seen = new Set();
+      const uniq = combined.filter(x => { if (seen.has(x.id)) return false; seen.add(x.id); return true; });
+      // Sort all known by value
+      const allSorted = [...uniq].sort((a, b) => b.value - a.value);
+      const top4 = allSorted.slice(0, 4);
+      const newConfirmed = [confirmed[0], ...top4.filter(x => x.id !== confirmed[0].id)];
+
+      // eliminate those we now know are below 5th
+      allSorted.forEach((item, idx) => {
+        if (idx >= 4) newElim.add(item.id);
+      });
+
+      // check if done
+      const stillPossible = candidates.filter(c => !newElim.has(c.id));
+      if (stillPossible.length <= 4) {
+        setConfirmed([confirmed[0], ...stillPossible.sort((a, b) => b.value - a.value)]);
+        setEliminated(newElim);
+        setPhase(4);
+      } else {
+        setEliminated(newElim);
+        setPhase(3);
+      }
+      return uniq;
+    });
+  }
+
+  function continueElim() {
+    runEliminationRound();
+  }
+
+  function computeFinal() {
+    // just show top 5 from all numbers
+    const top5 = [...numbers].sort((a, b) => b - a).slice(0, 5);
+    setFinalResult(top5);
+    setPhase(4);
+  }
+
+  // Determine actual top 5 for display
+  const actualTop5 = [...numbers].sort((a, b) => b - a).slice(0, 5);
+
+  const phasesDone = [
+    groups.length > 0 && roundResults.filter(r => r.type === "group").length,
+    champions.length > 0,
+    candidates.length > 0,
+    roundCount >= 7,
+    phase === 4
+  ];
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
+      fontFamily: "'Courier New', monospace",
+      color: "#e0d7ff",
+      padding: "0 0 60px 0"
+    }}>
+      {/* Header */}
+      <div style={{
+        textAlign: "center",
+        padding: "40px 20px 20px",
+        borderBottom: "1px solid #4a3f7a"
+      }}>
+        <div style={{ fontSize: 11, letterSpacing: 8, color: "#9b86ff", marginBottom: 8 }}>TOURNAMENT SIMULATOR</div>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, color: "#fff", letterSpacing: 2 }}>
+          25選最大5個
+        </h1>
+        <div style={{ marginTop: 8, fontSize: 13, color: "#9b86ff" }}>每次選5個比較 · 最少幾次找出最大5個？</div>
+        {started && (
+          <div style={{ marginTop: 16, display: "flex", justifyContent: "center", gap: 8 }}>
+            {["初賽", "冠軍賽", "候選", "淘汰", "結果"].map((label, i) => (
+              <div key={i} style={{
+                padding: "4px 12px", borderRadius: 20, fontSize: 11,
+                background: phase >= i ? "#7c5cbf" : "#2a2040",
+                color: phase >= i ? "#fff" : "#6b5fa0",
+                border: `1px solid ${phase >= i ? "#9b86ff" : "#3a3060"}`,
+                transition: "all 0.3s"
+              }}>{label}</div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
+
+        {/* Start Panel */}
+        {!started && (
+          <div style={{ marginTop: 40, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
+            <div style={{
+              background: "rgba(255,255,255,0.04)", border: "1px solid #4a3f7a",
+              borderRadius: 16, padding: 32, width: "100%", maxWidth: 500
+            }}>
+              <div style={{ fontSize: 13, color: "#9b86ff", marginBottom: 20, textAlign: "center", letterSpacing: 2 }}>選擇模式</div>
+              <button onClick={startRandom} style={btnStyle("#7c5cbf")}>
+                🎲 隨機產生 1~25
+              </button>
+              <div style={{ margin: "20px 0", borderTop: "1px solid #3a3060" }} />
+              <div style={{ fontSize: 12, color: "#9b86ff", marginBottom: 8 }}>自訂25個數字（空格或逗號分隔）</div>
+              <textarea
+                value={customNums}
+                onChange={e => setCustomNums(e.target.value)}
+                placeholder="例：5 12 3 88 ..."
+                rows={3}
+                style={{
+                  width: "100%", background: "#1a1535", border: "1px solid #4a3f7a",
+                  borderRadius: 8, color: "#e0d7ff", padding: 10, fontSize: 13,
+                  fontFamily: "inherit", resize: "vertical", boxSizing: "border-box"
+                }}
+              />
+              <button onClick={startCustom} style={{ ...btnStyle("#4a3f7a"), marginTop: 10 }}>
+                ✏️ 使用自訂數字
+              </button>
+            </div>
+          </div>
+        )}
+
+        {started && (
+          <>
+            {/* Numbers Display */}
+            <div style={{ marginTop: 28 }}>
+              <SectionTitle>📦 25個數字（已分組）</SectionTitle>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                {groups.map((grp, gi) => (
+                  <div key={gi} style={{
+                    background: "rgba(255,255,255,0.04)", border: "1px solid #4a3f7a",
+                    borderRadius: 12, padding: "12px 14px", minWidth: 90
+                  }}>
+                    <div style={{ fontSize: 10, color: "#9b86ff", marginBottom: 8, letterSpacing: 2 }}>{GROUPS[gi]} 組</div>
+                    {grp.map((item, j) => {
+                      const isTop5 = actualTop5.includes(item.value);
+                      const isElim = eliminated.has(item.id);
+                      const isConfirm = confirmed.find(c => c.id === item.id);
+                      return (
+                        <div key={j} style={{
+                          marginBottom: 4, padding: "3px 8px", borderRadius: 6, fontSize: 14,
+                          fontWeight: 700, textAlign: "center",
+                          background: isConfirm ? "#2d7d46" : isElim ? "#3a1a1a" : "rgba(255,255,255,0.06)",
+                          color: isConfirm ? "#6effa0" : isElim ? "#6b4040" : "#e0d7ff",
+                          textDecoration: isElim ? "line-through" : "none",
+                          transition: "all 0.4s"
+                        }}>
+                          {item.value}
+                          {item.rank && phase >= 1 && <span style={{ fontSize: 9, color: "#9b86ff", marginLeft: 4 }}>#{item.rank}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ marginTop: 28 }}>
+              <SectionTitle>▶ 操作</SectionTitle>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+                {phase === 0 && groups.map((_, gi) => {
+                  const done = roundResults.filter(r => r.type === "group").length;
+                  if (gi < done) return null;
+                  if (gi > done) return null;
+                  return (
+                    <button key={gi} onClick={() => runGroupRace(gi)} style={btnStyle("#7c5cbf")}>
+                      第{gi + 1}次：{GROUPS[gi]}組初賽
+                    </button>
+                  );
+                })}
+                {phase === 1 && (
+                  <button onClick={runChampRace} style={btnStyle("#b06000")}>
+                    第6次：冠軍賽（5組第一互比）
+                  </button>
+                )}
+                {(phase === 2 || phase === 3) && (
+                  <button onClick={runEliminationRound} style={btnStyle("#1a6b5a")}>
+                    第{roundCount + 1}次：淘汰賽
+                  </button>
+                )}
+                {phase === 4 && (
+                  <button onClick={() => setStarted(false)} style={btnStyle("#4a3f7a")}>
+                    🔄 重新開始
+                  </button>
+                )}
+              </div>
+              <div style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "#9b86ff" }}>
+                已進行：<span style={{ color: "#fff", fontWeight: 700 }}>{roundCount}</span> 次比賽
+              </div>
+            </div>
+
+            {/* Round Results */}
+            {roundResults.length > 0 && (
+              <div style={{ marginTop: 28 }}>
+                <SectionTitle>📊 比賽記錄</SectionTitle>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {roundResults.map((r, i) => (
+                    <div key={i} style={{
+                      background: "rgba(255,255,255,0.04)", border: "1px solid #4a3f7a",
+                      borderRadius: 10, padding: "12px 16px"
+                    }}>
+                      <div style={{ fontSize: 11, color: "#9b86ff", marginBottom: 8, letterSpacing: 1 }}>{r.label}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {r.participants.map((p, j) => (
+                          <div key={j} style={{
+                            display: "flex", alignItems: "center", gap: 5,
+                            background: j === 0 ? "#2d1f5e" : "rgba(255,255,255,0.05)",
+                            border: `1px solid ${j === 0 ? "#9b86ff" : "#3a3060"}`,
+                            borderRadius: 8, padding: "4px 10px"
+                          }}>
+                            <span style={{ fontSize: 10, color: "#9b86ff" }}>#{j + 1}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700 }}>{p.id}</span>
+                            <span style={{ fontSize: 11, color: "#c0b0ff" }}>={p.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Candidates */}
+            {candidates.length > 0 && (
+              <div style={{ marginTop: 28 }}>
+                <SectionTitle>🔍 候選名單（爭奪2~5名）</SectionTitle>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {candidates.map((c, i) => {
+                    const isElim = eliminated.has(c.id);
+                    const isConf = confirmed.find(x => x.id === c.id);
+                    return (
+                      <div key={i} style={{
+                        padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                        background: isConf ? "#1a4d2e" : isElim ? "#2a1010" : "#1e1a3a",
+                        border: `1px solid ${isConf ? "#4ade80" : isElim ? "#6b2020" : "#4a3f7a"}`,
+                        color: isConf ? "#6effa0" : isElim ? "#6b4040" : "#e0d7ff",
+                        textDecoration: isElim ? "line-through" : "none",
+                        transition: "all 0.4s"
+                      }}>
+                        {c.id}={c.value}
+                        {isConf && " ✓"}
+                        {isElim && " ✗"}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Final Result */}
+            {phase === 4 && (
+              <div style={{ marginTop: 28 }}>
+                <SectionTitle>🏆 最終結果</SectionTitle>
+                <div style={{
+                  background: "linear-gradient(135deg, #1a1040, #2d1f5e)",
+                  border: "2px solid #9b86ff", borderRadius: 16, padding: 24, textAlign: "center"
+                }}>
+                  <div style={{ fontSize: 12, color: "#9b86ff", letterSpacing: 3, marginBottom: 16 }}>最大的5個數字</div>
+                  <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+                    {actualTop5.map((v, i) => (
+                      <div key={i} style={{
+                        width: 64, height: 64, borderRadius: "50%",
+                        background: i === 0 ? "#b8860b" : i === 1 ? "#888" : i === 2 ? "#8b5e3c" : "#2d1f5e",
+                        border: `3px solid ${i === 0 ? "#ffd700" : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : "#9b86ff"}`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        flexDirection: "column"
+                      }}>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)" }}>#{i + 1}</div>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 20, fontSize: 14, color: "#9b86ff" }}>
+                    共進行 <span style={{ color: "#ffd700", fontSize: 22, fontWeight: 900 }}>{roundCount}</span> 次比賽
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Elimination Table */}
+            {phase >= 2 && (
+              <div style={{ marginTop: 28 }}>
+                <SectionTitle>📋 淘汰分析表</SectionTitle>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: "#2d1f5e" }}>
+                        {["編號", "數值", "確定輸給", "輸幾人", "狀態"].map(h => (
+                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#9b86ff", borderBottom: "1px solid #4a3f7a" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {candidates.map((c, i) => {
+                        const isElim = eliminated.has(c.id);
+                        const isConf = !!confirmed.find(x => x.id === c.id);
+                        // count losses
+                        let losers = [];
+                        const grp = groups.find(g => g.some(item => item.id === c.id));
+                        grp.forEach(item => { if (item.rank < c.rank) losers.push(item.id); });
+                        const champIdx = champRanking.findIndex(ch => ch.group === c.group);
+                        champRanking.forEach((ch, idx) => { if (idx < champIdx) losers.push(ch.id); });
+                        return (
+                          <tr key={i} style={{
+                            background: isConf ? "rgba(74,222,128,0.08)" : isElim ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.02)",
+                            borderBottom: "1px solid #2a2040"
+                          }}>
+                            <td style={{ padding: "6px 12px", fontWeight: 700 }}>{c.id}</td>
+                            <td style={{ padding: "6px 12px" }}>{c.value}</td>
+                            <td style={{ padding: "6px 12px", color: "#9b86ff", fontSize: 11 }}>{losers.join(", ") || "-"}</td>
+                            <td style={{ padding: "6px 12px" }}>{losers.length}</td>
+                            <td style={{ padding: "6px 12px" }}>
+                              <span style={{
+                                padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700,
+                                background: isConf ? "#1a4d2e" : isElim ? "#4d1a1a" : "#2d2050",
+                                color: isConf ? "#6effa0" : isElim ? "#f87171" : "#c0b0ff"
+                              }}>
+                                {isConf ? "✓ 確認" : isElim ? "✗ 淘汰" : "候選"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ children }) {
+  return (
+    <div style={{
+      fontSize: 11, letterSpacing: 3, color: "#9b86ff",
+      marginBottom: 12, paddingBottom: 6,
+      borderBottom: "1px solid #2a2040"
+    }}>{children}</div>
+  );
+}
+
+function btnStyle(bg) {
+  return {
+    background: bg, border: "none", borderRadius: 10,
+    color: "#fff", padding: "12px 24px", fontSize: 13,
+    fontFamily: "'Courier New', monospace", fontWeight: 700,
+    cursor: "pointer", letterSpacing: 1,
+    boxShadow: `0 4px 20px ${bg}88`,
+    transition: "transform 0.1s, box-shadow 0.1s",
+    width: "100%", maxWidth: 300
+  };
+}
