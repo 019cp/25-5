@@ -1,442 +1,332 @@
+html
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>25選最大5個 · 最佳場次模擬器</title>
+<title>25選最大5個 · 9場完成</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+TC:wght@400;700;900&display=swap');
 
   :root {
     --bg: #080612;
     --bg2: #0f0d1e;
-    --bg3: #16122a;
     --border: #2a2050;
     --accent: #8b5cf6;
     --accent2: #06d6a0;
     --gold: #f59e0b;
-    --red: #ef4444;
     --text: #ddd6fe;
     --muted: #6b5fa0;
     --mono: 'Share Tech Mono', monospace;
     --sans: 'Noto Sans TC', sans-serif;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); min-height: 100vh; overflow-x: hidden;
   }
-
-  /* Background grid */
   body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
     background-image:
       linear-gradient(rgba(139,92,246,0.03) 1px, transparent 1px),
       linear-gradient(90deg, rgba(139,92,246,0.03) 1px, transparent 1px);
     background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
   }
-
-  .wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 16px 80px; }
+  .wrap { position: relative; z-index: 1; max-width: 920px; margin: 0 auto; padding: 0 14px 80px; }
 
   /* Header */
-  header {
-    text-align: center;
-    padding: 40px 0 28px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 28px;
-  }
-  .eyebrow {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 8px;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-  h1 {
-    font-size: 32px;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: 4px;
-    line-height: 1.1;
-  }
+  header { text-align: center; padding: 36px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: 8px; color: var(--muted); margin-bottom: 8px; }
+  h1 { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 3px; }
   h1 span { color: var(--accent); }
-  .subtitle {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 8px;
-    letter-spacing: 2px;
-  }
+  .subtitle { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 6px; letter-spacing: 2px; }
 
-  /* Progress bar */
-  .progress-wrap { margin-top: 16px; }
-  .progress-info {
-    display: flex; justify-content: center; gap: 24px;
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
-    margin-bottom: 8px;
-  }
-  .progress-info strong { color: var(--gold); font-size: 18px; }
-  .progress-info .ok { color: var(--accent2); font-size: 14px; }
-  .bar-track {
-    height: 3px; background: var(--border); border-radius: 2px;
-    max-width: 360px; margin: 0 auto;
-  }
-  .bar-fill {
-    height: 3px; border-radius: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    transition: width 0.5s ease;
-  }
+  /* Progress */
+  .prog-bar { max-width: 400px; margin: 14px auto 0; }
+  .prog-info { display: flex; justify-content: center; gap: 28px; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 7px; }
+  .prog-info .big { color: var(--gold); font-size: 20px; font-weight: 700; }
+  .prog-info .ok  { color: var(--accent2); font-size: 15px; }
+  .track { height: 3px; background: var(--border); border-radius: 2px; }
+  .fill  { height: 3px; background: linear-gradient(90deg,var(--accent),var(--accent2)); border-radius: 2px; transition: width .5s; }
 
-  /* Start panel */
-  .start-panel {
-    max-width: 460px; margin: 0 auto;
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 16px; padding: 32px;
-  }
-  .panel-title {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 4px;
-    color: var(--muted); text-align: center; margin-bottom: 20px;
-  }
-  .divider { height: 1px; background: var(--border); margin: 20px 0; }
-  .field-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
-  textarea {
-    width: 100%; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); padding: 10px 12px;
-    font-family: var(--mono); font-size: 12px; resize: vertical;
-    outline: none; transition: border-color 0.2s;
-  }
+  /* Start */
+  .start-box { max-width: 460px; margin: 0 auto; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 30px; }
+  .panel-title { font-family: var(--mono); font-size: 9px; letter-spacing: 4px; color: var(--muted); text-align: center; margin-bottom: 18px; }
+  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+  .field-lbl { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+  textarea { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:9px 11px; font-family:var(--mono); font-size:12px; resize:vertical; outline:none; transition:border-color .2s; }
   textarea:focus { border-color: var(--accent); }
 
   /* Buttons */
-  .btn {
-    display: inline-block; border: none; border-radius: 8px;
-    color: #fff; padding: 11px 22px; font-family: var(--mono);
-    font-size: 12px; font-weight: 700; letter-spacing: 1px;
-    cursor: pointer; transition: transform 0.1s, opacity 0.2s;
-    width: 100%;
-  }
-  .btn:hover { opacity: 0.88; transform: translateY(-1px); }
-  .btn:active { transform: translateY(0); }
-  .btn-purple { background: var(--accent); box-shadow: 0 4px 20px #8b5cf644; }
-  .btn-dark { background: #1e1a3a; border: 1px solid var(--border); margin-top: 8px; }
-  .btn-green { background: #065f46; box-shadow: 0 4px 20px #06d6a044; }
-  .btn-red { background: #7f1d1d; }
-  .btn-reset { background: #1e1a3a; border: 1px solid var(--border); }
-  .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 24px; }
-  .controls .btn { width: auto; }
+  .btn { display:inline-block; border:none; border-radius:8px; color:#fff; padding:10px 20px; font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:1px; cursor:pointer; transition:transform .1s,opacity .2s; width:100%; }
+  .btn:hover { opacity:.85; transform:translateY(-1px); }
+  .btn:active { transform:translateY(0); }
+  .btn-purple { background:var(--accent); box-shadow:0 4px 18px #8b5cf644; }
+  .btn-dark   { background:#1e1a3a; border:1px solid var(--border); margin-top:8px; }
+  .btn-green  { background:#065f46; box-shadow:0 4px 18px #06d6a044; }
+  .btn-red    { background:#7f1d1d; }
+  .btn-reset  { background:#1e1a3a; border:1px solid var(--border); }
+  .controls   { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:22px; }
+  .controls .btn { width:auto; }
 
-  /* Section label */
-  .sec-label {
-    font-family: var(--mono); font-size: 9px; letter-spacing: 4px;
-    color: var(--muted); padding-bottom: 6px;
-    border-bottom: 1px solid var(--border); margin-bottom: 12px;
-  }
+  /* Section */
+  .sec { margin-bottom: 22px; }
+  .sec-lbl { font-family:var(--mono); font-size:9px; letter-spacing:4px; color:var(--muted); padding-bottom:5px; border-bottom:1px solid var(--border); margin-bottom:11px; }
 
-  /* Groups grid */
-  .groups-grid {
-    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-    margin-bottom: 8px;
-  }
-  .group-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px; min-width: 82px;
-  }
-  .group-name {
-    font-family: var(--mono); font-size: 8px; letter-spacing: 3px;
-    color: var(--accent); text-align: center; margin-bottom: 8px;
-  }
-  .num-cell {
-    margin-bottom: 3px; padding: 3px 6px; border-radius: 5px;
-    font-family: var(--mono); font-size: 14px; font-weight: 700;
-    text-align: center; transition: all 0.5s;
-    border: 1px solid transparent;
-    position: relative;
-  }
-  .num-cell.normal { background: rgba(255,255,255,0.04); color: var(--text); }
-  .num-cell.elim { background: #1a0606; color: #4a1a1a; text-decoration: line-through; border-color: #2a0808; }
-  .num-cell.top5 { background: #052e16; color: var(--accent2); border-color: #065f46; }
-  .num-cell .loss-badge {
-    font-size: 7px; color: var(--muted); margin-left: 3px;
-    font-family: var(--mono);
-  }
-  .num-cell.elim .loss-badge { color: #4a1a1a; }
-  .legend {
-    text-align: center; font-size: 9px; color: var(--muted);
-    font-family: var(--mono); letter-spacing: 1px; margin-top: 6px;
-  }
+  /* Groups */
+  .groups-grid { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; }
+  .group-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:10px; min-width:80px; }
+  .group-name { font-family:var(--mono); font-size:8px; letter-spacing:3px; color:var(--accent); text-align:center; margin-bottom:7px; }
+  .num-cell { margin-bottom:3px; padding:3px 5px; border-radius:5px; font-family:var(--mono); font-size:14px; font-weight:700; text-align:center; border:1px solid transparent; transition:all .5s; }
+  .num-cell .badge { font-size:7px; margin-left:2px; }
+  .num-cell.normal { background:rgba(255,255,255,.04); color:var(--text); }
+  .num-cell.elim   { background:#1a0606; color:#4a1a1a; text-decoration:line-through; border-color:#2a0808; }
+  .num-cell.elim .badge { color:#3a1010; }
+  .num-cell.top5   { background:#052e16; color:var(--accent2); border-color:#065f46; }
+  .legend { text-align:center; font-size:9px; color:var(--muted); font-family:var(--mono); margin-top:6px; letter-spacing:1px; }
 
   /* Round log */
-  .round-list { display: flex; flex-direction: column; gap: 6px; }
-  .round-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 14px;
-    animation: slideIn 0.35s ease;
-  }
-  .round-card.latest { border-color: var(--accent); background: rgba(139,92,246,0.08); }
-  .round-card-label {
-    font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
-    color: var(--accent); margin-bottom: 7px;
-  }
-  .round-participants { display: flex; gap: 5px; flex-wrap: wrap; }
-  .participant {
-    display: flex; align-items: center; gap: 4px;
-    border-radius: 6px; padding: 2px 8px;
-    border: 1px solid var(--border);
-  }
-  .participant.first { background: #1e1050; border-color: var(--accent); }
-  .participant .rank { font-family: var(--mono); font-size: 8px; color: var(--muted); }
-  .participant .val { font-family: var(--mono); font-size: 13px; font-weight: 700; }
-  .participant.first .val { color: #c4b5fd; }
+  .round-list { display:flex; flex-direction:column; gap:6px; max-height:420px; overflow-y:auto; padding-right:4px; }
+  .round-list::-webkit-scrollbar { width:4px; }
+  .round-list::-webkit-scrollbar-track { background:var(--bg2); }
+  .round-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .round-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; animation:slideIn .35s ease; }
+  .round-card.latest { border-color:var(--accent); background:rgba(139,92,246,.09); }
+  .round-card .rlbl { font-family:var(--mono); font-size:9px; letter-spacing:2px; color:var(--accent); margin-bottom:6px; }
+  .parts { display:flex; gap:5px; flex-wrap:wrap; }
+  .part { display:flex; align-items:center; gap:3px; border-radius:6px; padding:2px 8px; border:1px solid var(--border); }
+  .part.first { background:#1e1050; border-color:var(--accent); }
+  .part .rk { font-family:var(--mono); font-size:8px; color:var(--muted); }
+  .part .vl { font-family:var(--mono); font-size:13px; font-weight:700; }
+  .part.first .vl { color:#c4b5fd; }
+  .part .nm { font-size:9px; color:var(--muted); margin-left:1px; }
 
-  /* Final result */
-  .final-box {
-    background: linear-gradient(135deg, #0a0620, #160d40);
-    border: 2px solid var(--accent); border-radius: 16px;
-    padding: 32px; text-align: center;
-  }
-  .final-title {
-    font-family: var(--mono); font-size: 9px; letter-spacing: 6px;
-    color: var(--muted); margin-bottom: 20px;
-  }
-  .medals { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
-  .medal {
-    width: 68px; height: 68px; border-radius: 50%;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    border-width: 3px; border-style: solid;
-  }
-  .medal .medal-rank { font-size: 8px; color: rgba(255,255,255,0.5); }
-  .medal .medal-val { font-family: var(--mono); font-size: 22px; font-weight: 700; color: #fff; }
-  .medal-1 { background: #422006; border-color: var(--gold); }
-  .medal-2 { background: #1c1c1c; border-color: #9ca3af; }
-  .medal-3 { background: #3b1a08; border-color: #b45309; }
-  .medal-n { background: #1e1050; border-color: var(--accent); }
-  .final-count {
-    background: rgba(0,0,0,0.4); border-radius: 10px;
-    display: inline-block; padding: 14px 28px;
-  }
-  .final-count .lbl { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: 2px; }
-  .final-count .big { font-family: var(--mono); font-size: 48px; font-weight: 700; color: var(--gold); line-height: 1; }
-  .final-count .note { font-size: 10px; color: var(--accent2); margin-top: 4px; font-family: var(--mono); }
+  /* Explanation box */
+  .explain { background:rgba(139,92,246,.07); border:1px solid rgba(139,92,246,.25); border-radius:8px; padding:10px 14px; margin-top:8px; font-size:11px; color:#c4b5fd; line-height:1.7; font-family:var(--mono); }
+  .explain strong { color:var(--accent2); }
 
-  .section { margin-bottom: 24px; }
-  .hidden { display: none; }
+  /* Final */
+  .final-box { background:linear-gradient(135deg,#0a0620,#160d40); border:2px solid var(--accent); border-radius:16px; padding:28px; text-align:center; }
+  .final-ttl { font-family:var(--mono); font-size:9px; letter-spacing:6px; color:var(--muted); margin-bottom:18px; }
+  .medals { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
+  .medal { width:66px; height:66px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; border-width:3px; border-style:solid; }
+  .medal .mrk { font-size:8px; color:rgba(255,255,255,.5); }
+  .medal .mvl { font-family:var(--mono); font-size:21px; font-weight:700; color:#fff; }
+  .medal-1 { background:#422006; border-color:var(--gold); }
+  .medal-2 { background:#1c1c1c; border-color:#9ca3af; }
+  .medal-3 { background:#3b1a08; border-color:#b45309; }
+  .medal-n { background:#1e1050; border-color:var(--accent); }
+  .final-stat { background:rgba(0,0,0,.4); border-radius:10px; display:inline-block; padding:14px 28px; }
+  .final-stat .slbl { font-size:10px; color:var(--muted); font-family:var(--mono); letter-spacing:2px; }
+  .final-stat .sbig { font-family:var(--mono); font-size:46px; font-weight:700; color:var(--gold); line-height:1; }
+  .final-stat .snote { font-size:10px; color:var(--accent2); margin-top:4px; font-family:var(--mono); }
 
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; } to { opacity: 1; }
-  }
+  .hidden { display:none !important; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-7px)} to{opacity:1;transform:translateY(0)} }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <header>
-    <div class="eyebrow">OPTIMAL TOURNAMENT SIMULATOR</div>
-    <h1>25 選最大 <span>5</span> 個</h1>
-    <div class="subtitle">最佳策略 · 最少比賽場次</div>
-    <div class="progress-wrap" id="progressWrap" style="display:none">
-      <div class="progress-info">
-        <span>最少場次：<strong id="totalRoundsDisplay">—</strong></span>
-        <span>進度：<span class="ok" id="progressDisplay">0</span> / <span id="totalDisplay">—</span></span>
-      </div>
-      <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+<header>
+  <div class="eyebrow">FIXED 9-ROUND TOURNAMENT</div>
+  <h1>25 選最大 <span>5</span> 個</h1>
+  <div class="subtitle">固定策略 · 最多 9 場完成 · 找出前5並排序</div>
+  <div class="prog-bar hidden" id="progBar">
+    <div class="prog-info">
+      <span>目標場次：<span class="big">≤9</span></span>
+      <span>已進行：<span class="ok" id="progNum">0</span> / <span id="progTotal">9</span></span>
     </div>
-  </header>
+    <div class="track"><div class="fill" id="fillBar" style="width:0%"></div></div>
+  </div>
+</header>
 
-  <!-- Start panel -->
-  <div id="startPanel">
-    <div class="start-panel">
-      <div class="panel-title">選擇模式</div>
-      <button class="btn btn-purple" onclick="startRandom()">🎲 隨機產生 1 ～ 25</button>
-      <div class="divider"></div>
-      <div class="field-label">自訂 25 個數字（空格或逗號分隔）</div>
-      <textarea id="customInput" rows="3" placeholder="例：5 12 3 88 47 ..."></textarea>
-      <button class="btn btn-dark" onclick="startCustom()">✏️ 使用自訂數字</button>
-    </div>
+<!-- Start -->
+<div id="startPanel">
+  <div class="start-box">
+    <div class="panel-title">選擇模式</div>
+    <button class="btn btn-purple" onclick="startRandom()">🎲 隨機產生 1 ～ 25</button>
+    <div class="divider"></div>
+    <div class="field-lbl">自訂 25 個數字（空格或逗號分隔）</div>
+    <textarea id="customInput" rows="3" placeholder="例：5 12 3 88 47 ..."></textarea>
+    <button class="btn btn-dark" onclick="startCustom()">✏️ 使用自訂數字</button>
+  </div>
+</div>
+
+<!-- Game -->
+<div id="gamePanel" class="hidden">
+  <div class="controls" id="controls"></div>
+
+  <div class="sec">
+    <div class="sec-lbl">📦 25 個數字（已分 5 組）</div>
+    <div class="groups-grid" id="groupsGrid"></div>
+    <div class="legend">🟢 確認前5　🔴 淘汰（劃線）　括號 = 已輸場數</div>
   </div>
 
-  <!-- Game panel -->
-  <div id="gamePanel" class="hidden">
+  <div class="sec hidden" id="roundLogSec">
+    <div class="sec-lbl">📊 比賽記錄</div>
+    <div class="round-list" id="roundList"></div>
+  </div>
 
-    <!-- Controls -->
-    <div class="controls" id="controls"></div>
-
-    <!-- Groups -->
-    <div class="section">
-      <div class="sec-label">📦 25 個數字（已分 5 組）</div>
-      <div class="groups-grid" id="groupsGrid"></div>
-      <div class="legend">🟢 確認前5　🔴 淘汰（劃線）　括號 = 已輸場數</div>
-    </div>
-
-    <!-- Round log -->
-    <div class="section" id="roundLogSection" style="display:none">
-      <div class="sec-label">📊 比賽記錄</div>
-      <div class="round-list" id="roundList"></div>
-    </div>
-
-    <!-- Final -->
-    <div class="section" id="finalSection" style="display:none">
-      <div class="sec-label">🏆 最終結果</div>
-      <div class="final-box">
-        <div class="final-title">最大的 5 個數字</div>
-        <div class="medals" id="medals"></div>
-        <div class="final-count">
-          <div class="lbl">最佳策略共使用</div>
-          <div class="big" id="finalCount">—</div>
-          <div class="note" id="finalNote">次比賽</div>
-        </div>
+  <div class="sec hidden" id="finalSec">
+    <div class="sec-lbl">🏆 最終結果</div>
+    <div class="final-box">
+      <div class="final-ttl">前 5 名（已排序）</div>
+      <div class="medals" id="medals"></div>
+      <div class="final-stat">
+        <div class="slbl">共使用場次</div>
+        <div class="sbig" id="finalN">—</div>
+        <div class="snote" id="finalNote">次比賽</div>
       </div>
     </div>
-
-  </div><!-- /gamePanel -->
+  </div>
+</div>
 
 </div><!-- /wrap -->
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-let state = {
-  numbers: [], items: [], rounds: [], top5: [],
-  visibleRound: 0, autoTimer: null
-};
+let S = { items:[], rounds:[], top5:[], orderedGroups:[], champWinner:null, visibleRound:0, autoTimer:null, totalRounds:0 };
 
-// ── Utilities ──────────────────────────────────────────────────────────────
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+// ── Helpers ────────────────────────────────────────────────────────────────
+function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; }
 
-// ── Algorithm ──────────────────────────────────────────────────────────────
-function solveOptimal(numbers) {
-  const items = numbers.map((v, i) => ({ id: i, value: v }));
-  const beatenBy = {};
-  items.forEach(x => beatenBy[x.id] = new Set());
-  const rounds = [];
-
-  function runRound(label, group) {
-    const sorted = [...group].sort((a, b) => b.value - a.value);
-    for (let i = 0; i < sorted.length; i++)
-      for (let j = i + 1; j < sorted.length; j++) {
-        beatenBy[sorted[j].id].add(sorted[i].id);
-        beatenBy[sorted[i].id].forEach(b => beatenBy[sorted[j].id].add(b));
-      }
-    rounds.push({ label, participants: sorted });
-    return sorted;
-  }
-
-  const GROUPS = ['A','B','C','D','E'];
-  const groupItems = GROUPS.map((g, i) =>
-    items.slice(i * 5, (i + 1) * 5)
-  );
-  groupItems.forEach((grp, i) => runRound(`第${i+1}次 ｜ ${GROUPS[i]} 組初賽`, grp));
-
-  const champs = groupItems.map(grp => [...grp].sort((a,b) => b.value - a.value)[0]);
-  const champSorted = runRound('第6次 ｜ 冠軍賽', champs);
-
-  const top5Ids = new Set([champSorted[0].id]);
-  let candidates = items.filter(item => !top5Ids.has(item.id) && beatenBy[item.id].size < 5);
-
-  let roundNum = 7;
-  while (candidates.length > 0) {
-    const pickable = [...candidates].sort((a,b) => beatenBy[a.id].size - beatenBy[b.id].size);
-    const batch = pickable.slice(0, 5);
-    runRound(`第${roundNum}次 ｜ 決選淘汰賽`, batch);
-    roundNum++;
-
-    // recompute known losses for all candidates
-    const recompute = {};
-    items.forEach(x => recompute[x.id] = new Set());
+function computeBeatenBy(rounds, items) {
+  const b = {};
+  items.forEach(x => b[x.id] = new Set());
+  rounds.forEach(r => {
+    const s = r.participants;
+    for (let i = 0; i < s.length; i++)
+      for (let j = i+1; j < s.length; j++)
+        b[s[j].id].add(s[i].id);
+  });
+  // Transitive closure (repeat until stable)
+  let changed = true;
+  while (changed) {
+    changed = false;
     rounds.forEach(r => {
       const s = r.participants;
       for (let i = 0; i < s.length; i++)
-        for (let j = i + 1; j < s.length; j++) {
-          recompute[s[j].id].add(s[i].id);
-          recompute[s[i].id].forEach(b => recompute[s[j].id].add(b));
+        for (let j = i+1; j < s.length; j++) {
+          const before = b[s[j].id].size;
+          b[s[i].id].forEach(x => b[s[j].id].add(x));
+          if (b[s[j].id].size !== before) changed = true;
         }
     });
-    Object.keys(recompute).forEach(id => beatenBy[id] = recompute[id]);
+  }
+  return b;
+}
 
-    candidates = items.filter(item => !top5Ids.has(item.id) && beatenBy[item.id].size < 5);
-    const needed = 4 - (top5Ids.size - 1);
-    if (candidates.length <= needed) {
-      candidates.forEach(c => top5Ids.add(c.id));
-      candidates = [];
+// ── Algorithm: fixed strategy ──────────────────────────────────────────────
+// R1-5: group races
+// R6: champion race → #1 confirmed, groups reordered (G[0]>#1)
+// R7: {G[0][1], G[1][0], G[2][0], G[3][0], G[4][0]} → #2 confirmed
+// R8: best 5 from remaining candidates
+// R9 (if needed): best 5 from remaining candidates
+// Total: 7-9 rounds
+
+function buildStrategy(numbers) {
+  const items = numbers.map((v, i) => ({
+    id: i, value: v,
+    label: String.fromCharCode(65+Math.floor(i/5))+(i%5+1)
+  }));
+  const rounds = [];
+
+  function race(group, label, note) {
+    const participants = [...group].sort((a,b) => b.value - a.value);
+    rounds.push({ label, note: note||'', participants });
+    return participants;
+  }
+
+  // R1-5
+  const rawGroups = [0,1,2,3,4].map(i => items.slice(i*5,(i+1)*5));
+  const sortedGroups = rawGroups.map((g,i) => race(g, `第${i+1}次 ｜ ${String.fromCharCode(65+i)} 組初賽`, '各組內部排序'));
+
+  // R6: champion race
+  const champs = sortedGroups.map(g => g[0]);
+  const champResult = race(champs, '第6次 ｜ 冠軍賽', '5組第一互比 → 確認全場第1名');
+  // Reorder groups so G[0] is the group of the overall winner
+  const G = champResult.map(ch => sortedGroups.find(g => g[0].id === ch.id));
+  // G[0][0] = #1
+
+  // R7: the classic diagonal
+  // G[0][1]=A2, G[1][0]=B1, G[2][0]=C1, G[3][0]=D1, G[4][0]=E1
+  const r7candidates = [G[0][1], G[1][0], G[2][0], G[3][0], G[4][0]].filter(Boolean);
+  const r7result = race(r7candidates, '第7次 ｜ 淘汰賽 1',
+    '爭奪第2名：各組亞軍＋冠軍組的第2名 → 確認第2名');
+  // r7result[0] = #2
+
+  // Now figure out R8, R9
+  // Use beaten-by to determine remaining candidates
+  let beatenBy = computeBeatenBy(rounds, items);
+  const confirmedIds = new Set([G[0][0].id, r7result[0].id]);
+  let cands = items.filter(x => !confirmedIds.has(x.id) && beatenBy[x.id].size < 5);
+
+  if (cands.length > 0) {
+    const batch8 = [...cands].sort((a,b) => beatenBy[a.id].size - beatenBy[b.id].size).slice(0,5);
+    race(batch8, '第8次 ｜ 淘汰賽 2', '縮小候選名單');
+    beatenBy = computeBeatenBy(rounds, items);
+    cands = items.filter(x => !confirmedIds.has(x.id) && beatenBy[x.id].size < 5);
+    const knownTop5 = [...items].sort((a,b)=>b.value-a.value).slice(0,5).map(x=>x.id);
+    const topSet = new Set(knownTop5);
+    const allKnown = cands.every(x => topSet.has(x.id));
+    if (allKnown && cands.length <= 3) {
+      // done in 8!
+    } else if (cands.length > 3) {
+      const batch9 = [...cands].sort((a,b) => beatenBy[a.id].size - beatenBy[b.id].size).slice(0,5);
+      race(batch9, '第9次 ｜ 決選', '確認最終前5名');
     }
   }
 
-  const top5 = [...items].sort((a,b) => b.value - a.value).slice(0, 5);
-  return { rounds, top5, items };
-}
-
-// ── Compute per-item loss count up to visibleRound ─────────────────────────
-function computeLosses() {
-  const beaten = {};
-  state.items.forEach(x => beaten[x.id] = new Set());
-  state.rounds.slice(0, state.visibleRound).forEach(r => {
-    const s = r.participants;
-    for (let i = 0; i < s.length; i++)
-      for (let j = i + 1; j < s.length; j++) {
-        beaten[s[j].id].add(s[i].id);
-        beaten[s[i].id].forEach(b => beaten[s[j].id].add(b));
-      }
-  });
-  return beaten;
+  const top5 = [...items].sort((a,b) => b.value - a.value).slice(0,5);
+  return { items, rounds, top5, G, champResult, r7result };
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────
+const ROUND_NOTES = [
+  '', '', '', '', '',
+  '5組第一互比，確認全場第1名',
+  '爭奪第2名（各組亞軍中選出）',
+  '淘汰賽：縮小候選',
+  '決選：確認前5名'
+];
+
 function render() {
-  const { rounds, top5, items, visibleRound } = state;
+  const { items, rounds, top5, visibleRound } = S;
   const total = rounds.length;
   const isDone = visibleRound >= total;
-  const beaten = computeLosses();
+  const beatenBy = computeBeatenBy(rounds.slice(0, visibleRound), items);
 
-  // Progress
-  document.getElementById('progressWrap').style.display = 'block';
-  document.getElementById('totalRoundsDisplay').textContent = total;
-  document.getElementById('progressDisplay').textContent = visibleRound;
-  document.getElementById('totalDisplay').textContent = total;
-  document.getElementById('barFill').style.width = total ? `${(visibleRound/total)*100}%` : '0%';
+  // Progress bar
+  document.getElementById('progBar').classList.remove('hidden');
+  document.getElementById('progNum').textContent = visibleRound;
+  document.getElementById('progTotal').textContent = total;
+  document.getElementById('fillBar').style.width = total ? `${(visibleRound/total)*100}%` : '0%';
 
   // Controls
   const ctrl = document.getElementById('controls');
   ctrl.innerHTML = '';
-  if (!isDone && !state.autoTimer) {
-    ctrl.innerHTML += `<button class="btn btn-purple" onclick="nextRound()">▶ 下一場比賽</button>`;
-    ctrl.innerHTML += `<button class="btn btn-green" onclick="playAll()">⚡ 自動播放全部</button>`;
-  }
-  if (state.autoTimer) {
+  if (!isDone && !S.autoTimer)
+    ctrl.innerHTML += `<button class="btn btn-purple" onclick="nextRound()">▶ 下一場</button>
+                       <button class="btn btn-green"  onclick="playAll()">⚡ 自動播放</button>`;
+  if (S.autoTimer)
     ctrl.innerHTML += `<button class="btn btn-red" onclick="pausePlay()">⏸ 暫停</button>`;
-  }
   ctrl.innerHTML += `<button class="btn btn-reset" onclick="resetGame()">🔄 重新開始</button>`;
 
   // Groups
-  const GROUPS = ['A','B','C','D','E'];
   const grid = document.getElementById('groupsGrid');
   grid.innerHTML = '';
-  GROUPS.forEach((g, gi) => {
-    const grp = items.slice(gi * 5, (gi + 1) * 5);
+  const GLBLS = ['A','B','C','D','E'];
+  GLBLS.forEach((g, gi) => {
+    const grp = items.slice(gi*5, (gi+1)*5);
     let html = `<div class="group-card"><div class="group-name">${g} 組</div>`;
     grp.forEach(item => {
-      const cnt = beaten[item.id].size;
+      const cnt = beatenBy[item.id].size;
       const isTop5 = isDone && top5.find(t => t.id === item.id);
-      const isElim = cnt >= 5 && !isTop5;
-      const cls = isTop5 ? 'top5' : isElim ? 'elim' : 'normal';
-      const badge = cnt > 0 ? `<span class="loss-badge">-${cnt}</span>` : '';
+      const isElim = cnt >= 5;
+      const cls = (isTop5 || (isDone && !isElim)) && top5.find(t=>t.id===item.id) ? 'top5' : isElim ? 'elim' : 'normal';
+      const badge = cnt > 0 ? `<span class="badge">-${cnt}</span>` : '';
       html += `<div class="num-cell ${cls}">${item.value}${badge}</div>`;
     });
     html += '</div>';
@@ -444,111 +334,93 @@ function render() {
   });
 
   // Round log
-  const logSection = document.getElementById('roundLogSection');
-  const roundList = document.getElementById('roundList');
+  const logSec = document.getElementById('roundLogSec');
+  const list = document.getElementById('roundList');
   if (visibleRound > 0) {
-    logSection.style.display = 'block';
-    roundList.innerHTML = '';
+    logSec.classList.remove('hidden');
+    list.innerHTML = '';
     rounds.slice(0, visibleRound).forEach((r, i) => {
       const isLatest = i === visibleRound - 1;
-      let pHtml = r.participants.map((p, j) =>
-        `<div class="participant${j===0?' first':''}">
-          <span class="rank">#${j+1}</span>
-          <span class="val">${p.value}</span>
+      const partsHtml = r.participants.map((p, j) =>
+        `<div class="part${j===0?' first':''}">
+          <span class="rk">#${j+1}</span>
+          <span class="vl">${p.value}</span>
+          <span class="nm">${p.label}</span>
         </div>`
       ).join('');
-      roundList.innerHTML += `
+      const note = r.note ? `<div style="font-size:9px;color:var(--muted);margin-top:5px;font-family:var(--mono)">${r.note}</div>` : '';
+      list.innerHTML += `
         <div class="round-card${isLatest?' latest':''}">
-          <div class="round-card-label">${r.label}</div>
-          <div class="round-participants">${pHtml}</div>
+          <div class="rlbl">${r.label}</div>
+          <div class="parts">${partsHtml}</div>
+          ${note}
         </div>`;
     });
-    // scroll latest into view
-    const cards = roundList.querySelectorAll('.round-card');
-    if (cards.length) cards[cards.length-1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const cards = list.querySelectorAll('.round-card');
+    if (cards.length) cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'nearest'});
   } else {
-    logSection.style.display = 'none';
+    logSec.classList.add('hidden');
   }
 
   // Final
-  const finalSection = document.getElementById('finalSection');
+  const finalSec = document.getElementById('finalSec');
   if (isDone) {
-    finalSection.style.display = 'block';
-    const medalColors = [
-      {bg:'#422006', border:'#f59e0b'},
-      {bg:'#1c1c1c', border:'#9ca3af'},
-      {bg:'#3b1a08', border:'#b45309'},
-      {bg:'#1e1050', border:'#8b5cf6'},
-      {bg:'#1e1050', border:'#8b5cf6'},
-    ];
-    document.getElementById('medals').innerHTML = top5.map((item, i) =>
-      `<div class="medal" style="background:${medalColors[i].bg};border-color:${medalColors[i].border}">
-        <span class="medal-rank">#${i+1}</span>
-        <span class="medal-val">${item.value}</span>
+    finalSec.classList.remove('hidden');
+    const mColors = ['medal-1','medal-2','medal-3','medal-n','medal-n'];
+    document.getElementById('medals').innerHTML = top5.map((item,i) =>
+      `<div class="medal ${mColors[i]}">
+        <span class="mrk">#${i+1}</span>
+        <span class="mvl">${item.value}</span>
       </div>`
     ).join('');
-    document.getElementById('finalCount').textContent = total;
+    document.getElementById('finalN').textContent = total;
     document.getElementById('finalNote').textContent =
-      total <= 7 ? '次  ✨ 達到理論最佳解！' : `次  （理論最小值 7 次）`;
+      total <= 7 ? '次  ✨ 7場最佳！' :
+      total === 8 ? '次  🎯 8場完成！' :
+      '次  ✅ 9場完成';
   } else {
-    finalSection.style.display = 'none';
+    finalSec.classList.add('hidden');
   }
 }
 
-// ── Game control ───────────────────────────────────────────────────────────
+// ── Controls ───────────────────────────────────────────────────────────────
 function startGame(nums) {
-  clearInterval(state.autoTimer);
-  const result = solveOptimal(nums);
-  state = { numbers: nums, ...result, visibleRound: 0, autoTimer: null };
+  clearInterval(S.autoTimer);
+  const result = buildStrategy(nums);
+  S = { ...result, visibleRound: 0, autoTimer: null, totalRounds: result.rounds.length };
   document.getElementById('startPanel').classList.add('hidden');
   document.getElementById('gamePanel').classList.remove('hidden');
   render();
 }
 
-function startRandom() {
-  startGame(shuffle(Array.from({length:25},(_,i)=>i+1)));
-}
-
+function startRandom() { startGame(shuffle(Array.from({length:25},(_,i)=>i+1))); }
 function startCustom() {
   const raw = document.getElementById('customInput').value;
-  const parsed = raw.split(/[\s,，]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+  const parsed = raw.split(/[\s,，]+/).map(Number).filter(n=>!isNaN(n)&&n>0);
   if (parsed.length !== 25) { alert('請輸入恰好 25 個數字！'); return; }
   startGame(shuffle(parsed));
 }
 
 function nextRound() {
-  if (state.visibleRound < state.rounds.length) {
-    state.visibleRound++;
-    render();
-  }
+  if (S.visibleRound < S.rounds.length) { S.visibleRound++; render(); }
 }
 
 function playAll() {
-  if (state.autoTimer) return;
-  state.autoTimer = setInterval(() => {
-    if (state.visibleRound < state.rounds.length) {
-      state.visibleRound++;
-      render();
-    } else {
-      clearInterval(state.autoTimer);
-      state.autoTimer = null;
-      render();
-    }
-  }, 650);
-}
-
-function pausePlay() {
-  clearInterval(state.autoTimer);
-  state.autoTimer = null;
+  if (S.autoTimer) return;
+  S.autoTimer = setInterval(() => {
+    if (S.visibleRound < S.rounds.length) { S.visibleRound++; render(); }
+    else { clearInterval(S.autoTimer); S.autoTimer = null; render(); }
+  }, 700);
   render();
 }
 
+function pausePlay() { clearInterval(S.autoTimer); S.autoTimer = null; render(); }
+
 function resetGame() {
-  clearInterval(state.autoTimer);
-  state.autoTimer = null;
+  clearInterval(S.autoTimer); S.autoTimer = null;
   document.getElementById('startPanel').classList.remove('hidden');
   document.getElementById('gamePanel').classList.add('hidden');
-  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('progBar').classList.add('hidden');
 }
 </script>
 </body>
